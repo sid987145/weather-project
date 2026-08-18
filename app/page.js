@@ -1,10 +1,30 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./context/AuthContext";
 import Dashboard from "./components/Dashboard";
 
 export default function Page() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 dark:border-white"></div>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-200">
+    <main className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-200">
       <Dashboard />
       <GlobalStyles />
     </main>
@@ -86,7 +106,24 @@ function GlobalStyles() {
           }
           .dark .city-marker-pin::after { border-bottom-color: #0f172a; border-right-color: #0f172a; }
           
-          .city-marker-pin.is-selected, .city-marker-pin:hover {
+          @keyframes pulse-marker {
+            0% { transform: translate(4px, 4px) scale(1.08); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { transform: translate(4px, 4px) scale(1.25); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: translate(4px, 4px) scale(1.08); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+          }
+
+          .city-marker-pin.is-selected {
+            background: #ef4444 !important; /* Red color */
+            color: #ffffff !important;
+            animation: pulse-marker 1.5s infinite ease-in-out;
+            z-index: 1000;
+          }
+          
+          .city-marker-pin.is-selected::after {
+            background: #ef4444 !important;
+          }
+          
+          .city-marker-pin:hover:not(.is-selected) {
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.32); transform: translate(4px, 1px) scale(1.08);
           }
         `,

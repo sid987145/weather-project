@@ -1,52 +1,38 @@
 import { getCollection } from "./db";
-import { CITIES } from "./cities";
 import { CACHE_DURATION_MS } from "./constants";
 import { fetchLatestSnapshots } from "./services/dashboardService";
+import { CITIES as DEFAULT_CITIES } from "./cities";
+import connectMongo from "../../../lib/mongodb";
+import TrackedCity from "../../../lib/models/TrackedCity";
 
 export async function GET(request) {
-  let client;
-
   try {
     const { searchParams } = new URL(request.url);
+    const days = parseInt(searchParams.get("days") || "7", 10);
 
-    const days = parseInt(
-      searchParams.get("days") || "7",
-      10
-    );
-
-    const dbConnection = await getCollection();
-
-    client = dbConnection.client;
-
-    const collection = dbConnection.collection;
-
+    const { collection } = await getCollection();
     const now = new Date();
 
-    const latestGlobalEntry =
-      await collection.findOne(
-        {},
-        {
-          sort: { updatedAt: -1 },
-        }
-      );
+    const latestGlobalEntry = await collection.findOne(
+      {},
+      {
+        sort: { updatedAt: -1 },
+      }
+    );
 
     const needsUpdate =
       !latestGlobalEntry ||
-      now - new Date(latestGlobalEntry.updatedAt) >
-        CACHE_DURATION_MS;
+      now - new Date(latestGlobalEntry.updatedAt) > CACHE_DURATION_MS;
 
     if (needsUpdate) {
-      const snapshots =
-        await fetchLatestSnapshots();
-
+      const snapshots = await fetchLatestSnapshots();
       if (snapshots.length) {
         await collection.insertMany(snapshots);
       }
     }
 
     const cutoffDate = new Date(
-      now.getTime() -
-        days * 24 * 60 * 60 * 1000
+      now.getTime() - days * 24 * 60 * 60 * 1000
     );
 
     const history = await collection
@@ -60,25 +46,27 @@ export async function GET(request) {
       })
       .toArray();
 
-    const latestCities = CITIES.map((city) => {
-      const cityHistory = history.filter(
-        (h) => h.cityId === city.id
-      );
+    await connectMongo();
+    let CITIES = await TrackedCity.find({}).lean();
 
-      return cityHistory.length
-        ? cityHistory[cityHistory.length - 1]
-        : null;
+    if (!CITIES || CITIES.length === 0) {
+      await TrackedCity.insertMany(DEFAULT_CITIES);
+      CITIES = await TrackedCity.find({}).lean();
+    }
+
+    const latestCities = CITIES.map((city) => {
+      const cityHistory = history.filter((h) => h.cityId === city.id);
+      return cityHistory.length ? cityHistory[cityHistory.length - 1] : null;
     }).filter(Boolean);
 
     const trends = {};
-
     CITIES.forEach((city) => {
       trends[city.id] = history
         .filter((h) => h.cityId === city.id)
         .map((h) => ({
           time: h.updatedAt,
-          temperatureC: h.weather.temperatureC,
-          usAqi: h.airQuality.usAqi,
+          temperatureC: h.weather?.temperatureC ?? null,
+          usAqi: h.airQuality?.usAqi ?? null,
         }));
     });
 
@@ -91,6 +79,7 @@ export async function GET(request) {
       trends,
     });
   } catch (error) {
+    console.error("Dashboard API Error:", error);
     return Response.json(
       {
         error: "Internal Server Error",
@@ -100,9 +89,5 @@ export async function GET(request) {
         status: 500,
       }
     );
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 }

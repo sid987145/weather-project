@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
-import { Banknote, Clock3, Database, Gauge, MapPin, Users, Wind, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Banknote, Clock3, Database, Gauge, MapPin, Users, Wind, X, Loader2, CalendarDays } from "lucide-react";
 import { formatCurrencyRate, formatDateTime, formatMetric, formatNumber, getAqiLevel } from "../utils/dashboardUtils";
 import { TemperatureGauge, TrendChart } from "./Charts";
 
 export default function CityModal({ snapshot, trends, onClose }) {
+  const [forecast, setForecast] = useState([]);
+  const [loadingForecast, setLoadingForecast] = useState(true);
+
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.key === "Escape") onClose();
@@ -13,6 +17,24 @@ export default function CityModal({ snapshot, trends, onClose }) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    const fetchForecast = async () => {
+      setLoadingForecast(true);
+      try {
+        const res = await fetch(`/api/forecast?lat=${snapshot.city.latitude}&lon=${snapshot.city.longitude}`);
+        if (res.ok) {
+          const data = await res.json();
+          setForecast(data.forecast || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch forecast", err);
+      } finally {
+        setLoadingForecast(false);
+      }
+    };
+    fetchForecast();
+  }, [snapshot.city.latitude, snapshot.city.longitude]);
 
   const rows = [
     ["Temperature", formatMetric(snapshot.weather.temperatureC, "°C", 1)],
@@ -33,7 +55,7 @@ export default function CityModal({ snapshot, trends, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[1000] bg-slate-950/55 p-3 backdrop-blur-sm sm:p-6 flex items-center justify-center">
-      <div role="dialog" aria-modal="true" className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl sm:max-h-[calc(100vh-3rem)]">
+      <div role="dialog" aria-modal="true" className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl sm:max-h-[calc(100vh-3rem)]">
         <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -94,6 +116,41 @@ export default function CityModal({ snapshot, trends, onClose }) {
                     </tbody>
                   </table>
                 </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-950">
+                  <CalendarDays className="h-4 w-4 text-slate-500" />
+                  5-Day Forecast
+                </div>
+                {loadingForecast ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                  </div>
+                ) : forecast.length > 0 ? (
+                  <div className="grid grid-cols-5 gap-2">
+                    {forecast.map((day) => (
+                      <div key={day.date} className="flex flex-col items-center justify-between rounded-lg bg-slate-50 p-2 text-center border border-slate-100">
+                        <span className="text-xs font-semibold text-slate-600">
+                          {new Date(day.date).toLocaleDateString("en-US", { weekday: "short" })}
+                        </span>
+                        <Image
+                          src={`https://openweathermap.org/img/wn/${day.icon}@2x.png`}
+                          alt={day.condition || "Weather icon"}
+                          width={40}
+                          height={40}
+                          unoptimized
+                          className="h-10 w-10 drop-shadow-sm"
+                        />
+                        <div className="flex w-full items-center justify-center gap-1.5 text-xs">
+                          <span className="font-bold text-slate-900">{Math.round(day.temp_max)}°</span>
+                          <span className="text-slate-400">{Math.round(day.temp_min)}°</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 text-center py-4">No forecast available.</p>
+                )}
               </div>
               <div className="rounded-lg border border-slate-200 p-4">
                 <h3 className="text-sm font-semibold text-slate-950 mb-3">Trend (Temp & AQI)</h3>

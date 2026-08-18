@@ -52,6 +52,8 @@ export default function CityMap({ cities, selectedCityId, onSelectCity }) {
     };
   }, []);
 
+  const isInitialFitRef = useRef(false);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -60,24 +62,35 @@ export default function CityMap({ cities, selectedCityId, onSelectCity }) {
       const map = mapRef.current;
       if (!map || cancelled) return;
 
-      markerLayerRef.current?.remove();
-      const markerLayer = L.layerGroup().addTo(map);
-      markerLayerRef.current = markerLayer;
+      markerLayerRef.current?.clearLayers();
+      const markerLayer = markerLayerRef.current;
 
       cities.forEach((snapshot) => {
-        L.marker([snapshot.city.latitude, snapshot.city.longitude], {
-          icon: cityIcon(L, snapshot, snapshot.city.id === selectedCityId),
+        const isSelected = snapshot.city.id === selectedCityId;
+        const marker = L.marker([snapshot.city.latitude, snapshot.city.longitude], {
+          icon: cityIcon(L, snapshot, isSelected),
         })
-          .on("click", () => onSelectRef.current(snapshot.city.id))
-          .addTo(markerLayer);
+          .bindTooltip(`
+            <div class="font-sans text-center">
+              <strong class="text-sm">${snapshot.city.name}</strong><br/>
+              <span class="text-xs text-slate-500">Temp: ${snapshot.weather.temperatureC !== null ? Math.round(snapshot.weather.temperatureC) + '°C' : 'N/A'}</span><br/>
+              <span class="text-xs text-slate-500">AQI: ${snapshot.airQuality.usAqi ?? snapshot.airQuality.europeanAqi}</span>
+            </div>
+          `, { direction: 'top', offset: [0, -20], className: 'shadow-lg rounded-md px-2 py-1' })
+          .on("click", () => onSelectRef.current(snapshot.city.id));
+        
+        marker.cityId = snapshot.city.id;
+        marker.addTo(markerLayer);
       });
-
-      const bounds = L.latLngBounds(
-        cities.map((snapshot) => [snapshot.city.latitude, snapshot.city.longitude])
-      );
-
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [36, 36], maxZoom: 3 });
+      
+      if (!isInitialFitRef.current && cities.length > 0) {
+        const bounds = L.latLngBounds(
+          cities.map((snapshot) => [snapshot.city.latitude, snapshot.city.longitude])
+        );
+        if (bounds.isValid()) {
+          map.flyToBounds(bounds, { duration: 1.5, padding: [36, 36] });
+          isInitialFitRef.current = true;
+        }
       }
     }
 
@@ -87,6 +100,20 @@ export default function CityMap({ cities, selectedCityId, onSelectCity }) {
       cancelled = true;
     };
   }, [cities, selectedCityId]);
+
+  // Separate effect to handle flyTo when a city is selected
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedCityId) return;
+
+    const selectedSnapshot = cities.find((s) => s.city.id === selectedCityId);
+    if (selectedSnapshot) {
+      map.flyTo([selectedSnapshot.city.latitude, selectedSnapshot.city.longitude], 7, {
+        duration: 1.5,
+        easeLinearity: 0.25,
+      });
+    }
+  }, [selectedCityId, cities]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 }

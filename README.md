@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Global City Insights Dashboard 🌍
 
-## Getting Started
+A modern, high-performance real-time dashboard for tracking global cities, live weather, air quality indices (AQI), 5-day weather forecasts, population demographics, and foreign exchange rates. Built with **Next.js (App Router)**, **React 19**, **Tailwind CSS**, **Leaflet**, and **MongoDB**.
 
-First, run the development server:
+---
 
+## ✨ Features
+
+- 🗺️ **Interactive Global Map**: Visualizes tracked cities worldwide using Leaflet with color-coded temperature and AQI pin markers, smooth fly-to animations, and interactive tooltips.
+- 🌤️ **Live Weather & Air Quality**: Real-time atmospheric metrics powered by OpenWeather API (temperature, feels-like, humidity, wind speed, PM2.5, PM10, NO₂, O₃, CO, and US/European AQI).
+- 📅 **5-Day Weather Forecasts**: Detailed daily forecast projections with dynamic weather condition icons and high/low temperature metrics.
+- 📈 **Historical Trends & Analytics**: Temperature and AQI trend charts powered by Recharts with multi-axis support.
+- 🔍 **Global City Search & Tracking**: Autocomplete search via GeoDB RapidAPI with one-click city tracking and dynamic MongoDB persistence.
+- 🔐 **Authentication & Security**: Secure user signup, login, JWT token authentication, and bcrypt password hashing.
+- 🌗 **Dark Mode & Light Mode**: Built-in responsive theme switching with automatic system preference detection.
+- ⚡ **Optimized Next.js 16 + React 19 Engine**: Server-rendered API routes, connection pooling, zero lint warnings, and high-performance Turbopack build support.
+
+---
+
+## 🚀 Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) (App Router, Turbopack)
+- **UI & Styling**: React 19, Tailwind CSS v4, Lucide React icons
+- **Data Visualizations**: Leaflet, React-Leaflet, Recharts
+- **Database & ODM**: MongoDB Atlas, Mongoose
+- **APIs**: OpenWeatherMap API, GeoDB Cities (RapidAPI), ExchangeRate-API
+
+---
+
+## 🛠️ Getting Started
+
+### 1. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repository-url>
+cd global-city-dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 3. Configure Environment Variables
+Copy `.env.example` to `.env.local` and configure your API keys:
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Fill in the environment variables:
+```env
+# MongoDB Atlas Connection
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/global-city-auth?appName=Cluster0
 
-## Learn More
+# Authentication
+JWT_SECRET=your_jwt_secret_key
 
-To learn more about Next.js, take a look at the following resources:
+# OpenWeather API (https://openweathermap.org/api)
+OPENWEATHER_API_KEY=your_openweather_api_key
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# GeoDB RapidAPI (https://rapidapi.com/wirefreethought/api/geodb-cities)
+GEODB_API_KEY=your_geodb_rapidapi_key
+GEODB_API_HOST=wft-geo-db.p.rapidapi.com
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Exchange Rate API (https://www.exchangerate-api.com/)
+EXCHANGE_RATE_API_KEY=your_exchange_rate_key
+```
 
-## Deploy on Vercel
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📦 Production Scripts
+
+- `npm run dev` - Start local development server with hot-reloading
+- `npm run lint` - Run ESLint checks across all components and API routes
+- `npm run build` - Create optimized production bundle
+- `npm run start` - Run production server
+
+---
+
+## 🚢 Deployment
+
+Easily deploy to [Vercel](https://vercel.com) or any Node.js hosting platform:
+1. Push your code to your GitHub repository.
+2. Import your repository on Vercel.
+3. Configure the environment variables in your Vercel Project Settings.
+4. Deploy!
+
