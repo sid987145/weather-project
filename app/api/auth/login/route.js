@@ -36,9 +36,10 @@ export async function POST(req) {
     }
 
     // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || "default_fallback_jwt_secret_key_prod";
     const token = jwt.sign(
       { userId: user._id, email: user.email, name: user.name },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: "7d" }
     );
 
@@ -53,7 +54,11 @@ export async function POST(req) {
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      {
+        error: error.message?.includes("MONGODB_URI")
+          ? "Database configuration missing (MONGODB_URI not set in Vercel)."
+          : error.message || "Internal Server Error",
+      },
       { status: 500 }
     );
   }
